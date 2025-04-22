@@ -19,10 +19,9 @@ const RegisterPage = () => {
     phone: "",
   });
   const [error, setError] = useState("");
-  
   const [districts, setDistricts] = useState([]);
   const [cities, setCities] = useState([]);
-  
+
   const provinces = [
     "Koshi",
     "Madhesh",
@@ -34,35 +33,99 @@ const RegisterPage = () => {
   ];
 
   const provinceDistrictCityData = {
-    "Koshi": {
-      districts: ["Bhojpur", "Dhankuta", "Ilam", "Jhapa", "Khotang", "Morang", "Okhaldhunga", "Panchthar", "Sankhuwasabha", "Solukhumbu", "Sunsari", "Taplejung", "Terhathum", "Udayapur"],
-      cities: ["Biratnagar", "Ilam", "Dharan", "Bhadrapur"]
+    Koshi: {
+      districts: {
+        Ilam: ["Ilam"],
+        Jhapa: ["Birtamod", "Damak", "Mechinagar", "Belbari", "Sundar Haraincha", "Urlabari", "Ratuwamai", "Pathari Shanischare", "Garuda", "Gauradaha"],
+        Khotang: ["Diktel"],
+        Morang: ["Biratnagar", "Budhiganga", "Mechinagar", "Belbari", "Sundar Haraincha", "Urlabari", "Ratuwamai", "Pathari Shanischare", "Garuda", "Gauradaha"],
+        Okhaldhunga: ["Okhaldhunga"],
+        Panchthar: ["Phidim"],
+        Sankhuwasabha: ["Khandbari"],
+        Solukhumbu: ["Salleri"],
+        Sunsari: ["Itahari", "Dharan", "Inaruwa", "Ramdhuni", "Duhabi"]
+      }
     },
-    "Madhesh": {
-      districts: ["Bara", "Dhanusha", "Mahottari", "Parsa", "Rautahat", "Sarlahi", "Saptari", "Siraha"],
-      cities: ["Birgunj", "Janakpur", "Lahan"]
+    Madhesh: {
+      districts: {
+        Bara: ["Kalaiya", "Nijgadh"],
+        Dhanusha: ["Janakpur", "Sabaila"],
+        Mahottari: ["Jaleshwar", "Bardibas"],
+        Parsa: ["Birgunj"],
+        Rautahat: ["Gaur"],
+        Sarlahi: ["Malangawa"],
+        Siraha: ["Lahan"],
+        Udayapur: ["Gaighat"]
+      }
     },
-    "Bagmati": {
-      districts: ["Bhaktapur", "Chitwan", "Kathmandu", "Lalitpur", "Makawanpur", "Ramechhap", "Sindhuli", "Sindhupalchok"],
-      cities: ["Kathmandu", "Patan", "Bhaktapur"]
+    Bagmati: {
+      districts: {
+        Kathmandu: ["Kathmandu", "Lalitpur", "Bhaktapur", "Kirtipur", "Nagarjun", "Gokarneshwar", "Budhanilkantha", "Tarakeshwar", "Chandragiri", "Tokha", "Madhyapur Thimi", "Suryabinayak", "Godawari"],
+        Bhaktapur: ["Bhaktapur"],
+        Lalitpur: ["Lalitpur", "Godawari"],
+        Makwanpur: ["Hetauda"],
+        Nuwakot: ["Bidur"],
+        Ramechhap: ["Manthali"],
+        Sindhuli: ["Sindhulimadi"],
+        Sindhupalchok: ["Chautara"],
+        Dhading: ["Dhading"],
+        Chitwan: ["Bharatpur", "Ratnanagar", "Khairahani"]
+      }
     },
-    "Gandaki": {
-      districts: ["Kaski", "Gorkha", "Lamjung", "Manang", "Madhya", "Myagdi", "Parbat", "Syangja", "Tanahu"],
-      cities: ["Pokhara", "Bandipur"]
+    Gandaki: {
+      districts: {
+        Kaski: ["Pokhara", "Lekhnath"],
+        Gorkha: ["Gorkha"],
+        Lamjung: ["Besisahar"],
+        Manang: ["Chame"],
+        Mustang: ["Jomsom"],
+        Nawalpur: ["Kawasoti"],
+        Parbat: ["Kushma"],
+        Syangja: ["Waling", "Phedi"]
+      }
     },
-    "Lumbini": {
-      districts: ["Arghakhanchi", "Banke", "Bardiya", "Dang", "Gulmi", "Kapilvastu", "Nawalparasi", "Palpa", "Rupandehi", "Salyan", "Surkhet"],
-      cities: ["Butwal", "Lumbini"]
+    Lumbini: {
+      districts: {
+        Arghakhanchi: ["Sandhikharka"],
+        Banke: ["Nepalgunj", "Kohalpur"],
+        Bardiya: ["Gulariya", "Thakurdwara"],
+        Dang: ["Ghorahi", "Tulsipur", "Lamahi"],
+        Kapilvastu: ["Bhimdatta", "Shivaraj", "Kapilvastu", "Rajapur", "Krishnanagar", "Maharajganj"],
+        Palpa: ["Tansen"],
+        Pyuthan: ["Pyuthan"],
+        Rupandehi: ["Butwal", "Tilottama", "Siddharthanagar", "Sunawal", "Lumbini Sanskritik", "Devdaha", "Sainamaina", "Bardaghat"]
+      }
     },
-    "Karnali": {
-      districts: ["Bardiya", "Dailekh", "Dolpa", "Humla", "Jajarkot", "Jagadishpur", "Kalikot", "Mugu", "Rukum", "Salyan", "Surkhet", "Gulmi", "Baglung"],
-      cities: ["Surkhet", "Nepalgunj"]
+    Sudurpashchim: {
+      districts: {
+        Achham: ["Mangalsen"],
+        Baitadi: ["Baitadi"],
+        Bajhang: ["Bajhang"],
+        Bajura: ["Martadi"],
+        Doti: ["Doti"],
+        Kailali: ["Dhangadhi", "Godawari (Kailali)", "Gauriganga", "Punarbas", "Tikapur"],
+        Kanchanpur: ["Mahendranagar"],
+        Dadeldhura: ["Dadeldhura"],
+        Darchula: ["Darchula"]
+      }
     },
-    "Sudurpashchim": {
-      districts: ["Achham", "Baitadi", "Bajhang", "Bajura", "Doti", "Dolpa", "Kailali", "Kanchanpur", "Far Western Region"],
-      cities: ["Dhangadhi", "Mahendranagar"]
-    },
+    Karnali: {
+      districts: {
+        Bardiya: ["Gulariya", "Thakurdwara"],
+        Dailekh: ["Dailekh"],
+        Dolpa: ["Dunai"],
+        Humla: ["Simkot"],
+        Jajarkot: ["Khalanga"],
+        Jumla: ["Jumla"],
+        Kalikot: ["Manma"],
+        Mugu: ["Gamgadhi"],
+        Rukum: ["Musikot"],
+        Salyan: ["Salyan"],
+        Surkhet: ["Birendranagar"]
+      }
+    }
   };
+  
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -73,23 +136,19 @@ const RegisterPage = () => {
 
   const handleProvinceChange = (province) => {
     setFormData((prev) => ({ ...prev, province, district: "", city: "" }));
-    setDistricts(provinceDistrictCityData[province]?.districts || []);
+    // Ensure districts is always an array
+    setDistricts(Object.keys(provinceDistrictCityData[province]?.districts || {}).map(district => district) || []);
     setCities([]); // Reset cities when province changes
   };
-
- 
+  
   const handleDistrictChange = (district) => {
-    setFormData((prev) => ({ ...prev, district, city: "" })); 
-    setCities([]); 
-    const provinceData = provinceDistrictCityData[formData.province]; 
-    if (provinceData) {
-      if (provinceData.districts.includes(district)) {
-        setCities(provinceData.cities || []);  
-      }
+    setFormData((prev) => ({ ...prev, district, city: "" }));
+    setCities([]); // Reset cities when district changes
+    const provinceData = provinceDistrictCityData[formData.province];
+    if (provinceData && provinceData.districts[district]) {
+      setCities(provinceData.districts[district]);
     }
   };
-  
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
