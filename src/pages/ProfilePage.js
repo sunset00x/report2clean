@@ -7,6 +7,7 @@ import {
   FaUserCircle, FaEnvelope, FaMapMarkerAlt, FaPhoneAlt,
   FaSignOutAlt, FaFileAlt, FaUser, FaClock
 } from 'react-icons/fa';
+import Navbar from '../components/Navbar'; 
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -41,19 +42,8 @@ const ProfilePage = () => {
 
   return (
     <div style={styles.container}>
-      {/* Navbar */}
-      <nav style={styles.navbar}>
-        <h2 style={styles.logo}>Report2Clean</h2>
-        <div style={styles.navLinks}>
-          <Link to="/" style={styles.navItem}>Home</Link>
-          <Link to="/submit-report" style={styles.navItem}>Submit Report</Link>
-          <Link to="/profile" style={{ ...styles.navItem, fontWeight: 'bold' }}>Profile</Link>
-          <button onClick={handleLogout} style={styles.logoutBtn}>
-            <FaSignOutAlt style={{ marginRight: '6px' }} />
-            Logout
-          </button>
-        </div>
-      </nav>
+      {/* ✅ Shared Navbar */}
+      <Navbar />
 
       {/* Main layout */}
       <div style={styles.main}>
@@ -78,9 +68,14 @@ const ProfilePage = () => {
           <div style={styles.infoRow}><strong>City:</strong> {userData.city}</div>
           <div style={styles.infoRow}><FaClock /> Joined on: {new Date(user.metadata.creationTime).toLocaleDateString()}</div>
 
-          <Link to="/myreports" style={styles.reportLink}>
+          <Link to="/reports" style={styles.reportLink}>
             <FaFileAlt /> View My Reports
           </Link>
+          <br /><br />
+          <button onClick={handleLogout} style={styles.logoutBtn}>
+            <FaSignOutAlt style={{ marginRight: '6px' }} />
+            Logout
+          </button>
         </div>
       </div>
     </div>
@@ -94,39 +89,6 @@ const styles = {
     fontFamily: 'Arial, sans-serif',
     background: '#f4f6f8',
     minHeight: '100vh',
-  },
-  navbar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '1rem 2rem',
-    background: '#004c99',
-    color: '#fff',
-  },
-  logo: {
-    margin: 0,
-    fontSize: '24px',
-  },
-  navLinks: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1.2rem',
-  },
-  navItem: {
-    color: '#fff',
-    textDecoration: 'none',
-    fontSize: '16px',
-  },
-  logoutBtn: {
-    background: '#e60000',
-    color: '#fff',
-    padding: '8px 14px',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    display: 'flex',
-    alignItems: 'center',
   },
   main: {
     display: 'flex',
@@ -176,6 +138,17 @@ const styles = {
     borderRadius: '6px',
     textDecoration: 'none',
     fontWeight: 'bold',
+  },
+  logoutBtn: {
+    background: '#e60000',
+    color: '#fff',
+    padding: '8px 14px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    display: 'flex',
+    alignItems: 'center',
   },
   loading: {
     padding: '2rem',

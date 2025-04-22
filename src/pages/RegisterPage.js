@@ -13,13 +13,57 @@ const RegisterPage = () => {
     password: "",
     confirmPassword: "",
     province: "",
+    district: "",
     city: "",
     address: "",
     phone: "",
   });
   const [error, setError] = useState("");
-
   
+  const [districts, setDistricts] = useState([]);
+  const [cities, setCities] = useState([]);
+  
+  const provinces = [
+    "Koshi",
+    "Madhesh",
+    "Bagmati",
+    "Gandaki",
+    "Lumbini",
+    "Karnali",
+    "Sudurpashchim"
+  ];
+
+  const provinceDistrictCityData = {
+    "Koshi": {
+      districts: ["Bhojpur", "Dhankuta", "Ilam", "Jhapa", "Khotang", "Morang", "Okhaldhunga", "Panchthar", "Sankhuwasabha", "Solukhumbu", "Sunsari", "Taplejung", "Terhathum", "Udayapur"],
+      cities: ["Biratnagar", "Ilam", "Dharan", "Bhadrapur"]
+    },
+    "Madhesh": {
+      districts: ["Bara", "Dhanusha", "Mahottari", "Parsa", "Rautahat", "Sarlahi", "Saptari", "Siraha"],
+      cities: ["Birgunj", "Janakpur", "Lahan"]
+    },
+    "Bagmati": {
+      districts: ["Bhaktapur", "Chitwan", "Kathmandu", "Lalitpur", "Makawanpur", "Ramechhap", "Sindhuli", "Sindhupalchok"],
+      cities: ["Kathmandu", "Patan", "Bhaktapur"]
+    },
+    "Gandaki": {
+      districts: ["Kaski", "Gorkha", "Lamjung", "Manang", "Madhya", "Myagdi", "Parbat", "Syangja", "Tanahu"],
+      cities: ["Pokhara", "Bandipur"]
+    },
+    "Lumbini": {
+      districts: ["Arghakhanchi", "Banke", "Bardiya", "Dang", "Gulmi", "Kapilvastu", "Nawalparasi", "Palpa", "Rupandehi", "Salyan", "Surkhet"],
+      cities: ["Butwal", "Lumbini"]
+    },
+    "Karnali": {
+      districts: ["Bardiya", "Dailekh", "Dolpa", "Humla", "Jajarkot", "Jagadishpur", "Kalikot", "Mugu", "Rukum", "Salyan", "Surkhet", "Gulmi", "Baglung"],
+      cities: ["Surkhet", "Nepalgunj"]
+    },
+    "Sudurpashchim": {
+      districts: ["Achham", "Baitadi", "Bajhang", "Bajura", "Doti", "Dolpa", "Kailali", "Kanchanpur", "Far Western Region"],
+      cities: ["Dhangadhi", "Mahendranagar"]
+    },
+  };
+
   const handleChange = (e) => {
     setFormData((prev) => ({
       ...prev,
@@ -27,11 +71,31 @@ const RegisterPage = () => {
     }));
   };
 
+  const handleProvinceChange = (province) => {
+    setFormData((prev) => ({ ...prev, province, district: "", city: "" }));
+    setDistricts(provinceDistrictCityData[province]?.districts || []);
+    setCities([]); // Reset cities when province changes
+  };
+
+ 
+  const handleDistrictChange = (district) => {
+    setFormData((prev) => ({ ...prev, district, city: "" })); 
+    setCities([]); 
+    const provinceData = provinceDistrictCityData[formData.province]; 
+    if (provinceData) {
+      if (provinceData.districts.includes(district)) {
+        setCities(provinceData.cities || []);  
+      }
+    }
+  };
+  
+  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { fullName, email, password, confirmPassword, province, city, address, phone } = formData;
+    const { fullName, email, password, confirmPassword, province, district, city, address, phone } = formData;
 
-    if (!fullName || !email || !password || !confirmPassword || !province || !city || !address || !phone) {
+    if (!fullName || !email || !password || !confirmPassword || !province || !district || !city || !address || !phone) {
       setError("Please fill all fields.");
       return;
     }
@@ -48,9 +112,10 @@ const RegisterPage = () => {
         email,
         phone,
         province,
+        district,
         city,
         address,
-        createdAt: new Date()
+        createdAt: new Date(),
       });
       navigate("/profile");
     } catch (err) {
@@ -69,9 +134,10 @@ const RegisterPage = () => {
         email: user.email,
         phone: user.phoneNumber || "",
         province: "",
+        district: "",
         city: "",
         address: "",
-        createdAt: new Date()
+        createdAt: new Date(),
       });
 
       navigate("/profile");
@@ -90,8 +156,24 @@ const RegisterPage = () => {
           <input type="text" name="fullName" placeholder="Full Name" onChange={handleChange} />
           <input type="email" name="email" placeholder="Email Address" onChange={handleChange} />
           <input type="tel" name="phone" placeholder="Phone Number" onChange={handleChange} />
-          <input type="text" name="province" placeholder="Province" onChange={handleChange} />
-          <input type="text" name="city" placeholder="City" onChange={handleChange} />
+          <select name="province" value={formData.province} onChange={(e) => handleProvinceChange(e.target.value)}>
+            <option value="">Select Province</option>
+            {provinces.map((province, index) => (
+              <option key={index} value={province}>{province}</option>
+            ))}
+          </select>
+          <select name="district" value={formData.district} onChange={(e) => handleDistrictChange(e.target.value)} disabled={!formData.province}>
+            <option value="">Select District</option>
+            {districts.map((district, index) => (
+              <option key={index} value={district}>{district}</option>
+            ))}
+          </select>
+          <select name="city" value={formData.city} onChange={handleChange} disabled={!formData.district}>
+            <option value="">Select City</option>
+            {cities.map((city, index) => (
+              <option key={index} value={city}>{city}</option>
+            ))}
+          </select>
           <input type="text" name="address" placeholder="Address" onChange={handleChange} />
           <input type="password" name="password" placeholder="Password" onChange={handleChange} />
           <input type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleChange} />
@@ -122,7 +204,8 @@ const RegisterPage = () => {
           font-family: 'Poppins', sans-serif;
         }
 
-        .register-form input {
+        .register-form input,
+        .register-form select {
           display: block;
           width: 100%;
           padding: 12px;
@@ -169,26 +252,7 @@ const RegisterPage = () => {
           margin: 5px 0;
           border: none;
           border-radius: 8px;
-          font-weight: 500;
           cursor: pointer;
-          font-size: 15px;
-        }
-
-        .google-btn {
-          background-color: #ffffff;
-          border: 1px solid #ccc;
-          color: #000;
-        }
-
-        .facebook-btn {
-          background-color: #1877f2;
-          color: white;
-        }
-
-        .error {
-          color: red;
-          margin-top: 10px;
-          font-weight: 500;
         }
       `}</style>
     </>
