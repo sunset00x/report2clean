@@ -3,19 +3,21 @@ import { db, storage, auth } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
-import { FiMapPin, FiCamera, FiCheckCircle } from 'react-icons/fi';
-import Navbar from '../components/Navbar'; // ✅ Make sure this path is correct based on your structure
+import { FiCamera, FiCheckCircle, FiMapPin } from 'react-icons/fi';
+import Navbar from '../components/Navbar';
 
 const ReportPage = () => {
   const navigate = useNavigate();
   const [description, setDescription] = useState('');
   const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [location, setLocation] = useState(null);
+  const [manualLocation, setManualLocation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  // Get user's current location
+  // Ask for location on mount
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -23,15 +25,17 @@ const ReportPage = () => {
         setLocation({ lat: latitude, lng: longitude });
       },
       (err) => {
-        console.error(err);
-        setError('Location access denied. Please enable GPS.');
+        console.warn('Location permission denied:', err.message);
+        setLocation(null); // fallback to manual input
       }
     );
   }, []);
 
   const handleImageChange = (e) => {
-    if (e.target.files[0]) {
-      setImage(e.target.files[0]);
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
@@ -43,7 +47,8 @@ const ReportPage = () => {
       return;
     }
 
-    if (!description || !location || !image) {
+    const finalLocation = location || manualLocation;
+    if (!description || !finalLocation || !image) {
       setError('Please fill in all fields.');
       return;
     }
@@ -60,18 +65,18 @@ const ReportPage = () => {
         userId: auth.currentUser.uid,
         description,
         imageUrl,
-        location,
+        location: location || { manualLocation },
         timestamp: serverTimestamp(),
       });
 
       setSubmitting(false);
       setSuccess(true);
-      setDescription('');
-      setImage(null);
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => {
+        navigate('/reportssection');
+      }, 1000);
     } catch (err) {
-      console.error(err);
-      setError('Failed to submit report.');
+      console.error('Error submitting report:', err);
+      setError('Failed to submit report. Please try again.');
       setSubmitting(false);
     }
   };
@@ -91,18 +96,25 @@ const ReportPage = () => {
             onChange={(e) => setDescription(e.target.value)}
           />
 
+          {!location && (
+            <input
+              type="text"
+              placeholder="Enter location manually"
+              style={styles.input}
+              value={manualLocation}
+              onChange={(e) => setManualLocation(e.target.value)}
+            />
+          )}
+
           <label style={styles.uploadLabel}>
             <FiCamera style={{ marginRight: 8 }} />
             Upload Photo
             <input type="file" accept="image/*" style={styles.inputFile} onChange={handleImageChange} />
           </label>
 
-          <div style={styles.locationBox}>
-            <FiMapPin />
-            <span style={{ marginLeft: 8 }}>
-              {location ? `Lat: ${location.lat.toFixed(2)}, Lng: ${location.lng.toFixed(2)}` : 'Fetching location...'}
-            </span>
-          </div>
+          {imagePreview && (
+            <img src={imagePreview} alt="Report preview" style={styles.previewImage} />
+          )}
 
           {error && <p style={styles.error}>{error}</p>}
           {success && (
@@ -149,6 +161,12 @@ const styles = {
     borderRadius: 6,
     resize: 'vertical',
   },
+  input: {
+    padding: 10,
+    fontSize: 14,
+    border: '1px solid #ccc',
+    borderRadius: 6,
+  },
   uploadLabel: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -162,11 +180,10 @@ const styles = {
   inputFile: {
     display: 'none',
   },
-  locationBox: {
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: 14,
-    color: '#444',
+  previewImage: {
+    marginTop: 10,
+    maxHeight: 200,
+    borderRadius: 8,
   },
   error: {
     color: 'red',
