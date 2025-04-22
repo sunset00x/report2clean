@@ -3,7 +3,7 @@ import { db, storage, auth } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
-import { FiCamera, FiCheckCircle, FiMapPin } from 'react-icons/fi';
+import { FiCamera, FiCheckCircle, FiMapPin, FiLoader } from 'react-icons/fi';
 import Navbar from '../components/Navbar';
 
 const ReportPage = () => {
@@ -16,27 +16,82 @@ const ReportPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [locationEnabled, setLocationEnabled] = useState(null);
 
-  // Ask for location on mount
+  // Ask for location permission on mount
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setLocation({ lat: latitude, lng: longitude });
-      },
-      (err) => {
-        console.warn('Location permission denied:', err.message);
-        setLocation(null); // fallback to manual input
+    const askForLocation = async () => {
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        setLocationEnabled(permission.state === 'granted');
+        
+        if (permission.state === 'granted') {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const { latitude, longitude } = pos.coords;
+              setLocation({ lat: latitude, lng: longitude });
+            },
+            (err) => {
+              console.warn('Location access failed:', err.message);
+              setLocationEnabled(false);
+            }
+          );
+        }
+      } catch (err) {
+        console.warn('Permission API not supported:', err);
+        // Fallback to traditional geolocation
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            setLocation({ lat: latitude, lng: longitude });
+            setLocationEnabled(true);
+          },
+          (err) => {
+            console.warn('Location permission denied:', err.message);
+            setLocationEnabled(false);
+          }
+        );
       }
-    );
+    };
+
+    askForLocation();
   }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setImage(file);
-      setImagePreview(URL.createObjectURL(file));
+    if (!file) return;
+
+    // Validate image
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!validTypes.includes(file.type)) {
+      setError('Please upload a JPEG or PNG image');
+      return;
     }
+
+    if (file.size > maxSize) {
+      setError('Image must be smaller than 5MB');
+      return;
+    }
+
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+    setError('');
+  };
+
+  const handleLocationPermission = () => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setLocation({ lat: latitude, lng: longitude });
+        setLocationEnabled(true);
+      },
+      (err) => {
+        console.warn('Location permission denied:', err.message);
+        setLocationEnabled(false);
+      }
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -47,9 +102,9 @@ const ReportPage = () => {
       return;
     }
 
-    const finalLocation = location || manualLocation;
+    const finalLocation = locationEnabled ? location : manualLocation;
     if (!description || !finalLocation || !image) {
-      setError('Please fill in all fields.');
+      setError('Please fill in all required fields');
       return;
     }
 
@@ -57,26 +112,28 @@ const ReportPage = () => {
     setError('');
 
     try {
+      // Upload image
       const imageRef = ref(storage, `reports/${Date.now()}_${image.name}`);
       await uploadBytes(imageRef, image);
       const imageUrl = await getDownloadURL(imageRef);
 
+      // Save report data
       await addDoc(collection(db, 'reports'), {
         userId: auth.currentUser.uid,
         description,
         imageUrl,
-        location: location || { manualLocation },
+        location: locationEnabled ? location : { address: manualLocation },
         timestamp: serverTimestamp(),
       });
 
-      setSubmitting(false);
       setSuccess(true);
       setTimeout(() => {
         navigate('/reportssection');
-      }, 1000);
+      }, 1500);
     } catch (err) {
       console.error('Error submitting report:', err);
       setError('Failed to submit report. Please try again.');
+    } finally {
       setSubmitting(false);
     }
   };
@@ -84,47 +141,83 @@ const ReportPage = () => {
   return (
     <>
       <Navbar />
+      <div className="report-container">
+        <h2 className="report-heading">Submit a Cleanliness Report</h2>
 
-      <div style={styles.container}>
-        <h2 style={styles.heading}>Submit a Cleanliness Report</h2>
-
-        <form style={styles.form} onSubmit={handleSubmit}>
+        <form className="report-form" onSubmit={handleSubmit}>
           <textarea
-            style={styles.textarea}
+            className="report-textarea"
             placeholder="Describe the issue..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            required
           />
 
-          {!location && (
-            <input
-              type="text"
-              placeholder="Enter location manually"
-              style={styles.input}
-              value={manualLocation}
-              onChange={(e) => setManualLocation(e.target.value)}
-            />
+          {locationEnabled === null ? (
+            <div className="location-loading">
+              <FiLoader className="spinner" />
+              <span>Checking location permissions...</span>
+            </div>
+          ) : locationEnabled ? (
+            <div className="location-success">
+              <FiMapPin />
+              <span>Location detected automatically</span>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="location-btn"
+                onClick={handleLocationPermission}
+              >
+                <FiMapPin /> Enable Location Access
+              </button>
+              <input
+                type="text"
+                placeholder="Enter location manually"
+                className="report-input"
+                value={manualLocation}
+                onChange={(e) => setManualLocation(e.target.value)}
+                required={!locationEnabled}
+              />
+            </>
           )}
 
-          <label style={styles.uploadLabel}>
-            <FiCamera style={{ marginRight: 8 }} />
-            Upload Photo
-            <input type="file" accept="image/*" style={styles.inputFile} onChange={handleImageChange} />
+          <label className="upload-label">
+            <FiCamera />
+            <span>{image ? 'Change Photo' : 'Upload Photo'}</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="input-file"
+              onChange={handleImageChange}
+              required
+            />
           </label>
 
           {imagePreview && (
-            <img src={imagePreview} alt="Report preview" style={styles.previewImage} />
+            <img src={imagePreview} alt="Report preview" className="preview-image" />
           )}
 
-          {error && <p style={styles.error}>{error}</p>}
+          {error && <p className="error-message">{error}</p>}
           {success && (
-            <p style={styles.success}>
-              <FiCheckCircle style={{ marginRight: 5 }} /> Report submitted successfully!
+            <p className="success-message">
+              <FiCheckCircle /> Report submitted successfully!
             </p>
           )}
 
-          <button type="submit" style={styles.submitBtn} disabled={submitting}>
-            {submitting ? 'Submitting...' : 'Submit Report'}
+          <button
+            type="submit"
+            className="submit-btn"
+            disabled={submitting || success}
+          >
+            {submitting ? (
+              <>
+                <FiLoader className="spinner" /> Submitting...
+              </>
+            ) : (
+              'Submit Report'
+            )}
           </button>
         </form>
       </div>
@@ -132,78 +225,161 @@ const ReportPage = () => {
   );
 };
 
-const styles = {
-  container: {
-    maxWidth: 600,
-    margin: '40px auto',
-    padding: 20,
-    border: '1px solid #ddd',
-    borderRadius: 8,
-    background: '#fff',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-  },
-  heading: {
-    fontSize: 24,
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-  },
-  textarea: {
-    minHeight: 100,
-    padding: 10,
-    fontSize: 16,
-    border: '1px solid #ccc',
-    borderRadius: 6,
-    resize: 'vertical',
-  },
-  input: {
-    padding: 10,
-    fontSize: 14,
-    border: '1px solid #ccc',
-    borderRadius: 6,
-  },
-  uploadLabel: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    padding: '8px 12px',
-    borderRadius: 6,
-    cursor: 'pointer',
-    fontSize: 14,
-    color: '#555',
-  },
-  inputFile: {
-    display: 'none',
-  },
-  previewImage: {
-    marginTop: 10,
-    maxHeight: 200,
-    borderRadius: 8,
-  },
-  error: {
-    color: 'red',
-    fontSize: 14,
-  },
-  success: {
-    color: 'green',
-    fontSize: 14,
-    display: 'flex',
-    alignItems: 'center',
-  },
-  submitBtn: {
-    padding: '10px 16px',
-    backgroundColor: '#1e88e5',
-    color: '#fff',
-    fontSize: 16,
-    border: 'none',
-    borderRadius: 6,
-    cursor: 'pointer',
-  },
-};
+// CSS Styles
+const styles = `
+.report-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.report-heading {
+  font-size: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #333;
+}
+
+.report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.report-textarea {
+  min-height: 100px;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.report-input {
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.upload-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f0f0f0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+  transition: background-color 0.2s;
+}
+
+.upload-label:hover {
+  background-color: #e0e0e0;
+}
+
+.input-file {
+  display: none;
+}
+
+.preview-image {
+  margin-top: 10px;
+  max-height: 200px;
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.error-message {
+  color: #d32f2f;
+  font-size: 14px;
+  margin: 0;
+}
+
+.success-message {
+  color: #388e3c;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+}
+
+.submit-btn {
+  padding: 10px 16px;
+  background-color: #1e88e5;
+  color: #fff;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.submit-btn:hover {
+  background-color: #1565c0;
+}
+
+.submit-btn:disabled {
+  background-color: #90caf9;
+  cursor: not-allowed;
+}
+
+.location-btn {
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.location-btn:hover {
+  background-color: #eee;
+}
+
+.location-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #388e3c;
+  font-size: 14px;
+}
+
+.location-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #555;
+  font-size: 14px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+`;
+
+// Inject styles
+const styleSheet = document.createElement("style");
+styleSheet.type = "text/css";
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 export default ReportPage;
