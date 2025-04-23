@@ -1,5 +1,6 @@
 import React from 'react';
-import Navbar from '../components/Navbar';  // Importing the Navbar component
+import Navbar from '../components/Navbar'; // Importing the Navbar component
+import { Link } from 'react-router-dom';
 
 function HomePage() {
   return (
@@ -14,9 +15,9 @@ function HomePage() {
 
         {/* Action buttons */}
         <div style={actionButtonsStyle}>
-          <button style={buttonStyle}>Login</button>
-          <button style={buttonStyle}>Submit Report</button>
-          <button style={buttonStyle}>View Reports</button>
+          <Link to="/login" style={{ ...buttonStyle, textDecoration: 'none' }}>Login</Link>
+          <Link to="/report" style={{ ...buttonStyle, textDecoration: 'none' }}>Submit Report</Link>
+          <Link to="/reports" style={{ ...buttonStyle, textDecoration: 'none' }}>View Reports</Link>
         </div>
       </section>
 
