@@ -33,7 +33,7 @@ const ProfilePage = () => {
 
   const handleLogout = async () => {
     await signOut(auth);
-    navigate('/register');
+    navigate('/login');
   };
 
   if (!userData) {
